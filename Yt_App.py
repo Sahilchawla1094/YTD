@@ -16,6 +16,15 @@ except Exception as e:
     ffmpeg_exe = None
     merging_possible = False
 
+# --- Custom HTTP Headers ---
+custom_headers = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/80.0.3987.122 Safari/537.36"
+    )
+}
+
 # --- Display information to the user ---
 st.title("YouTube Playlist Downloader (Up to 1080p Quality)")
 
@@ -29,7 +38,7 @@ else:
 st.markdown("""
 **Note:**  
 - This app uses [yt-dlp](https://github.com/yt-dlp/yt-dlp) for downloading videos.  
-- If merging separate video and audio streams is required (for higher quality), ffmpeg must be available.  
+- A custom HTTP header is added to mimic a browser, which helps prevent 403 Forbidden errors.
 - The downloaded videos will be saved to your Desktop under **YouTube Downloads**.
 """)
 
@@ -43,6 +52,7 @@ if playlist_url:
             'extract_flat': True,   # Only extract minimal info (IDs and titles)
             'skip_download': True,
             'quiet': True,
+            "http_headers": custom_headers,
         }
         with yt_dlp.YoutubeDL(ydl_opts_info) as ydl:
             playlist_info = ydl.extract_info(playlist_url, download=False)
@@ -68,11 +78,13 @@ if playlist_url:
                             "format": "bestvideo[height<=1080]+bestaudio/best",
                             "outtmpl": os.path.join(download_dir, "%(title)s.%(ext)s"),
                             "ffmpeg_location": ffmpeg_exe,
+                            "http_headers": custom_headers,
                         }
                     else:
                         ydl_opts_download = {
                             "format": "best[ext=mp4][height<=1080]",
                             "outtmpl": os.path.join(download_dir, "%(title)s.%(ext)s"),
+                            "http_headers": custom_headers,
                         }
                     try:
                         with yt_dlp.YoutubeDL(ydl_opts_download) as ydl:
@@ -98,11 +110,13 @@ if playlist_url:
                                 "format": "bestvideo[height<=1080]+bestaudio/best",
                                 "outtmpl": os.path.join(download_dir, "%(title)s.%(ext)s"),
                                 "ffmpeg_location": ffmpeg_exe,
+                                "http_headers": custom_headers,
                             }
                         else:
                             ydl_opts_download = {
                                 "format": "best[ext=mp4][height<=1080]",
                                 "outtmpl": os.path.join(download_dir, "%(title)s.%(ext)s"),
+                                "http_headers": custom_headers,
                             }
                         try:
                             with yt_dlp.YoutubeDL(ydl_opts_download) as ydl:
