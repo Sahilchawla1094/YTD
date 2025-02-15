@@ -3,12 +3,12 @@ import yt_dlp
 import os
 
 # --- Ask the user where they want to save the videos ---
-default_download_dir = os.path.join(os.path.expanduser("~"), "Desktop", "YouTube Downloads")
+default_download_dir = os.path.join(os.path.expanduser("~"), "Desktop", "Youtube downloads")
 user_download_dir = st.text_input(
     "Enter folder path where you want to save downloaded videos:",
     value=default_download_dir
 )
-download_dir = user_download_dir.strip()  # remove any accidental whitespace
+download_dir = user_download_dir.strip()  # remove accidental whitespace
 os.makedirs(download_dir, exist_ok=True)
 
 # --- Attempt to get the ffmpeg executable using imageio-ffmpeg ---
@@ -43,8 +43,8 @@ else:
 st.markdown("""
 **Note:**  
 - This app uses [yt-dlp](https://github.com/yt-dlp/yt-dlp) for downloading videos.
-- A custom HTTP header is added to mimic a browser, which helps prevent 403 errors.
-- The downloaded videos will be saved to the folder you specified.
+- A custom HTTP header is added to mimic a browser to help avoid 403 errors.
+- The `"restrictfilenames": True` option is set to ensure safe filenames.
 """)
 
 # --- Get the YouTube Playlist URL from the user ---
@@ -77,24 +77,27 @@ if playlist_url:
                     video_id = video.get("id")
                     video_url = f"https://www.youtube.com/watch?v={video_id}"
                     
-                    # Choose options based on whether merging (with ffmpeg) is available.
+                    # Choose options based on whether ffmpeg (merging) is available.
                     if merging_possible:
                         ydl_opts_download = {
                             "format": "bestvideo[height<=1080]+bestaudio/best",
                             "outtmpl": os.path.join(download_dir, "%(title)s.%(ext)s"),
                             "ffmpeg_location": ffmpeg_exe,
                             "http_headers": custom_headers,
+                            "restrictfilenames": True,
                         }
                     else:
                         ydl_opts_download = {
                             "format": "best[ext=mp4][height<=1080]",
                             "outtmpl": os.path.join(download_dir, "%(title)s.%(ext)s"),
                             "http_headers": custom_headers,
+                            "restrictfilenames": True,
                         }
                     try:
                         with yt_dlp.YoutubeDL(ydl_opts_download) as ydl:
                             ydl.download([video_url])
-                        st.write(f"Downloaded: {video_url}")
+                        output_path = os.path.join(download_dir, f"{video.get('title')}.{video_url.split('=')[-1]}")
+                        st.write(f"Downloaded: {video_url}\nFile saved to: {download_dir}")
                     except Exception as e:
                         st.error(f"Error downloading {video_url}: {e}")
                 st.success("Global download completed!")
@@ -116,17 +119,19 @@ if playlist_url:
                                 "outtmpl": os.path.join(download_dir, "%(title)s.%(ext)s"),
                                 "ffmpeg_location": ffmpeg_exe,
                                 "http_headers": custom_headers,
+                                "restrictfilenames": True,
                             }
                         else:
                             ydl_opts_download = {
                                 "format": "best[ext=mp4][height<=1080]",
                                 "outtmpl": os.path.join(download_dir, "%(title)s.%(ext)s"),
                                 "http_headers": custom_headers,
+                                "restrictfilenames": True,
                             }
                         try:
                             with yt_dlp.YoutubeDL(ydl_opts_download) as ydl:
                                 ydl.download([video_url])
-                            st.write(f"Downloaded: {title}")
+                            st.write(f"Downloaded: {title}\nSaved to: {download_dir}")
                         except Exception as e:
                             st.error(f"Error downloading {title}: {e}")
     except Exception as e:
