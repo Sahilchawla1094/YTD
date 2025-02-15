@@ -2,9 +2,13 @@ import streamlit as st
 import yt_dlp
 import os
 
-# --- Determine the path to the Desktop and create "YouTube Downloads" folder ---
-desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
-download_dir = os.path.join(desktop_path, "YouTube Downloads")
+# --- Ask the user where they want to save the videos ---
+default_download_dir = os.path.join(os.path.expanduser("~"), "Desktop", "YouTube Downloads")
+user_download_dir = st.text_input(
+    "Enter folder path where you want to save downloaded videos:",
+    value=default_download_dir
+)
+download_dir = user_download_dir.strip()  # remove any accidental whitespace
 os.makedirs(download_dir, exist_ok=True)
 
 # --- Attempt to get the ffmpeg executable using imageio-ffmpeg ---
@@ -16,7 +20,7 @@ except Exception as e:
     ffmpeg_exe = None
     merging_possible = False
 
-# --- Custom HTTP Headers ---
+# --- Custom HTTP Headers to avoid 403 errors ---
 custom_headers = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -27,19 +31,20 @@ custom_headers = {
 
 # --- Display information to the user ---
 st.title("YouTube Playlist Downloader (Up to 1080p Quality)")
+st.markdown(f"**Download Folder:** {download_dir}")
 
 if merging_possible:
     st.info(f"ffmpeg detected at: {ffmpeg_exe}\nUsing merging mode for highest quality downloads.")
 else:
     st.warning("ffmpeg not detected! Falling back to progressive streams which may be lower quality. "
                "To download merged high-quality videos (up to 1080p), ensure ffmpeg is installed. "
-               "See: https://ffmpeg.org/download.html")
+               "See: [ffmpeg.org](https://ffmpeg.org/download.html)")
 
 st.markdown("""
 **Note:**  
-- This app uses [yt-dlp](https://github.com/yt-dlp/yt-dlp) for downloading videos.  
-- A custom HTTP header is added to mimic a browser, which helps prevent 403 Forbidden errors.
-- The downloaded videos will be saved to your Desktop under **YouTube Downloads**.
+- This app uses [yt-dlp](https://github.com/yt-dlp/yt-dlp) for downloading videos.
+- A custom HTTP header is added to mimic a browser, which helps prevent 403 errors.
+- The downloaded videos will be saved to the folder you specified.
 """)
 
 # --- Get the YouTube Playlist URL from the user ---
@@ -52,7 +57,7 @@ if playlist_url:
             'extract_flat': True,   # Only extract minimal info (IDs and titles)
             'skip_download': True,
             'quiet': True,
-            "http_headers": custom_headers,
+            'http_headers': custom_headers,
         }
         with yt_dlp.YoutubeDL(ydl_opts_info) as ydl:
             playlist_info = ydl.extract_info(playlist_url, download=False)
@@ -72,7 +77,7 @@ if playlist_url:
                     video_id = video.get("id")
                     video_url = f"https://www.youtube.com/watch?v={video_id}"
                     
-                    # Choose options based on whether ffmpeg (merging) is available.
+                    # Choose options based on whether merging (with ffmpeg) is available.
                     if merging_possible:
                         ydl_opts_download = {
                             "format": "bestvideo[height<=1080]+bestaudio/best",
